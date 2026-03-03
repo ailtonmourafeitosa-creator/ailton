@@ -3,44 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teste Vocacional Inteligente</title>
+<title>Sistema Vocacional Inteligente</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    color: white;
-    text-align: center;
-    padding: 20px;
+body{
+font-family:Arial;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
+padding:20px;
 }
 
-.container {
-    background: rgba(0,0,0,0.7);
-    padding: 20px;
-    border-radius: 12px;
-    max-width: 800px;
-    margin: auto;
+.container{
+background:rgba(0,0,0,0.8);
+padding:20px;
+border-radius:12px;
+max-width:900px;
+margin:auto;
 }
 
-button {
-    background: #00c3ff;
-    border: none;
-    padding: 10px;
-    margin: 5px;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 90%;
-    font-size: 15px;
+button{
+background:#00c3ff;
+border:none;
+padding:10px;
+margin:6px;
+border-radius:6px;
+cursor:pointer;
+width:95%;
 }
 
-button:hover {
-    background: #00ffcc;
-}
+button:hover{background:#00ffcc;}
 
-canvas {
-    margin-top: 30px;
+textarea{
+width:95%;
+padding:10px;
+border-radius:8px;
+margin-top:15px;
 }
 </style>
 </head>
@@ -48,113 +49,155 @@ canvas {
 <body>
 
 <div class="container">
-<h1>🧠 Teste Vocacional Inteligente</h1>
-<p>Responda às perguntas:</p>
 
-<div id="perguntas"></div>
+<h1>🧠 Sistema Vocacional Inteligente</h1>
 
-<button onclick="mostrarResultado()">Ver Resultado</button>
+<div id="perguntaArea"></div>
+
+<textarea id="textoLivre" placeholder="Fale sobre seus sonhos ou interesses..."></textarea>
+
+<button onclick="finalizar()">Finalizar Análise</button>
 
 <h2 id="resultado"></h2>
 <canvas id="grafico"></canvas>
+<button onclick="gerarPDF()">Gerar Relatório PDF</button>
 
 </div>
 
 <script>
 
-let pontos = {
-    Exatas: 0,
-    Humanas: 0,
-    Biológicas: 0,
-    Criativas: 0
+let perfil={
+Analitico:0,
+Social:0,
+Cientifico:0,
+Criativo:0,
+Empreendedor:0,
+Tecnico:0
 };
 
-const perguntas = [
+let perguntaAtual=0;
+let primeiraEscolha="";
+
+const perguntas=[
 {
-    pergunta: "1. O que você prefere fazer?",
-    opcoes: [
-        {texto: "Resolver cálculos", area: "Exatas", peso: 2},
-        {texto: "Debater ideias", area: "Humanas", peso: 2},
-        {texto: "Estudar saúde", area: "Biológicas", peso: 2},
-        {texto: "Criar artes", area: "Criativas", peso: 2}
-    ]
-},
-{
-    pergunta: "2. Qual atividade te anima mais?",
-    opcoes: [
-        {texto: "Programar", area: "Exatas", peso: 3},
-        {texto: "Argumentar", area: "Humanas", peso: 3},
-        {texto: "Fazer experimentos", area: "Biológicas", peso: 3},
-        {texto: "Criar vídeos", area: "Criativas", peso: 3}
-    ]
+texto:"1. O que mais te atrai?",
+opcoes:[
+{texto:"Resolver problemas complexos",area:"Analitico"},
+{texto:"Ajudar pessoas",area:"Social"},
+{texto:"Investigar fenômenos",area:"Cientifico"},
+{texto:"Criar algo novo",area:"Criativo"},
+{texto:"Criar empresa",area:"Empreendedor"},
+{texto:"Trabalhar com máquinas",area:"Tecnico"}
+]
 }
 ];
 
-const container = document.getElementById("perguntas");
+function mostrarPergunta(){
 
-perguntas.forEach((q) => {
-    let p = document.createElement("p");
-    p.innerText = q.pergunta;
-    container.appendChild(p);
+let area=document.getElementById("perguntaArea");
+area.innerHTML="";
 
-    q.opcoes.forEach(op => {
-        let btn = document.createElement("button");
-        btn.innerText = op.texto;
-        btn.onclick = () => pontos[op.area] += op.peso;
-        container.appendChild(btn);
-    });
+let p=document.createElement("p");
+p.innerText=perguntas[perguntaAtual].texto;
+area.appendChild(p);
+
+perguntas[perguntaAtual].opcoes.forEach(op=>{
+let btn=document.createElement("button");
+btn.innerText=op.texto;
+btn.onclick=()=>responder(op.area);
+area.appendChild(btn);
+});
+}
+
+function responder(areaEscolhida){
+
+perfil[areaEscolhida]+=2;
+
+if(perguntaAtual===0){
+primeiraEscolha=areaEscolhida;
+
+// pergunta adaptativa
+perguntas.push({
+texto:"Pergunta específica para seu perfil:",
+opcoes:[
+{texto:"Você gosta de assumir riscos?",area:areaEscolhida},
+{texto:"Prefere estabilidade?",area:"Social"}
+]
+});
+}
+
+perguntaAtual++;
+
+if(perguntaAtual<perguntas.length){
+mostrarPergunta();
+}
+}
+
+function analisarTexto(){
+
+let texto=document.getElementById("textoLivre").value.toLowerCase();
+
+let palavras={
+Empreendedor:["empresa","negocio","liderar","inovar","lucro"],
+Analitico:["programar","calculo","logica","tecnologia"],
+Social:["ajudar","ensinar","comunidade"],
+Cientifico:["pesquisa","laboratorio","cientifico"],
+Criativo:["arte","design","musica","video"],
+Tecnico:["mecanica","eletrica","consertar"]
+};
+
+for(let area in palavras){
+palavras[area].forEach(p=>{
+if(texto.includes(p)) perfil[area]+=1;
+});
+}
+
+}
+
+function finalizar(){
+
+analisarTexto();
+
+let total=Object.values(perfil).reduce((a,b)=>a+b,0);
+
+let probabilidades={};
+
+for(let area in perfil){
+probabilidades[area]=(perfil[area]/total*100).toFixed(1);
+}
+
+let ranking=Object.keys(perfil).sort((a,b)=>perfil[b]-perfil[a]);
+
+document.getElementById("resultado").innerText=
+`Perfil predominante: ${ranking[0]} (${probabilidades[ranking[0]]}%) | Perfil secundário: ${ranking[1]}`;
+
+new Chart(document.getElementById("grafico"),{
+type:'bar',
+data:{
+labels:Object.keys(probabilidades),
+datasets:[{
+label:'Probabilidade (%)',
+data:Object.values(probabilidades),
+backgroundColor:['#00c3ff','#ff9800','#4caf50','#e91e63','#9c27b0','#ffc107']
+}]
+},
+options:{scales:{y:{beginAtZero:true,max:100}}}
 });
 
-function mostrarResultado() {
-
-    let total = Object.values(pontos).reduce((a,b)=>a+b,0);
-
-    if(total === 0){
-        document.getElementById("resultado").innerText = "Responda às perguntas primeiro.";
-        return;
-    }
-
-    let porcentagens = {};
-    for(let area in pontos){
-        porcentagens[area] = ((pontos[area]/total)*100).toFixed(1);
-    }
-
-    let ranking = Object.keys(pontos).sort((a,b)=>pontos[b]-pontos[a]);
-
-    document.getElementById("resultado").innerText =
-        `Perfil dominante: ${ranking[0]} (${porcentagens[ranking[0]]}%)`;
-
-    criarGrafico(porcentagens);
 }
 
-function criarGrafico(dados){
+function gerarPDF(){
 
-    new Chart(document.getElementById("grafico"), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(dados),
-            datasets: [{
-                label: 'Compatibilidade (%)',
-                data: Object.values(dados),
-                backgroundColor: [
-                    '#00c3ff',
-                    '#ff9800',
-                    '#4caf50',
-                    '#e91e63'
-                ]
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            }
-        }
-    });
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
 
+doc.text("Relatório Vocacional",20,20);
+doc.text(document.getElementById("resultado").innerText,20,40);
+
+doc.save("Relatorio_Vocacional.pdf");
 }
+
+mostrarPergunta();
 
 </script>
 
