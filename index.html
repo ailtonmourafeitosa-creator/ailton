@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste Vocacional</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+.container {
+    background: rgba(0,0,0,0.6);
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    margin: auto;
+}
+button {
+    background: #00c3ff;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background: #00ffcc;
+}
+.resultado {
+    font-size: 20px;
+    margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>Teste Vocacional</h1>
+<p>Responda às perguntas abaixo:</p>
+
+<p>1. Você prefere:</p>
+<button onclick="pontuar('exatas')">Resolver problemas matemáticos</button>
+<button onclick="pontuar('humanas')">Debater ideias e sociedade</button>
+<button onclick="pontuar('biologicas')">Estudar o corpo e a natureza</button>
+
+<p>2. Você se identifica mais com:</p>
+<button onclick="pontuar('exatas')">Tecnologia e inovação</button>
+<button onclick="pontuar('humanas')">Comunicação e liderança</button>
+<button onclick="pontuar('biologicas')">Saúde e cuidado</button>
+
+<p>3. Você gostaria de trabalhar com:</p>
+<button onclick="pontuar('exatas')">Programação ou Engenharia</button>
+<button onclick="pontuar('humanas')">Direito ou Psicologia</button>
+<button onclick="pontuar('biologicas')">Medicina ou Biologia</button>
+
+<button onclick="mostrarResultado()">Ver Resultado</button>
+
+<div class="resultado" id="resultado"></div>
+</div>
+
+<script>
+let pontos = {
+    exatas: 0,
+    humanas: 0,
+    biologicas: 0
+};
+
+function pontuar(area) {
+    pontos[area]++;
+}
+
+function mostrarResultado() {
+    let maior = Object.keys(pontos).reduce((a, b) => pontos[a] > pontos[b] ? a : b);
+    
+    let texto = "";
+
+    if (maior === "exatas") {
+        texto = "Seu perfil é EXATAS 🚀\nVocê pode se destacar em Engenharia, Computação, Física ou Tecnologia.";
+    }
+    if (maior === "humanas") {
+        texto = "Seu perfil é HUMANAS 📚\nVocê pode se destacar em Direito, Psicologia, Comunicação ou Ciências Sociais.";
+    }
+    if (maior === "biologicas") {
+        texto = "Seu perfil é BIOLÓGICAS 🧬\nVocê pode se destacar em Medicina, Biologia ou áreas da Saúde.";
+    }
+
+    document.getElementById("resultado").innerText = texto;
+}
+</script>
+
+</body>
+</html>
