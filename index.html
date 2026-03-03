@@ -3,37 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teste Vocacional</title>
+<title>Teste Vocacional Inteligente</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body {
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
     color: white;
     text-align: center;
     padding: 20px;
 }
+
 .container {
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.7);
     padding: 20px;
-    border-radius: 10px;
-    max-width: 600px;
+    border-radius: 12px;
+    max-width: 800px;
     margin: auto;
 }
+
 button {
     background: #00c3ff;
     border: none;
-    padding: 10px 20px;
-    margin: 10px;
-    border-radius: 5px;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    width: 90%;
+    font-size: 15px;
 }
+
 button:hover {
     background: #00ffcc;
 }
-.resultado {
-    font-size: 20px;
-    margin-top: 20px;
+
+canvas {
+    margin-top: 30px;
 }
 </style>
 </head>
@@ -41,58 +48,115 @@ button:hover {
 <body>
 
 <div class="container">
-<h1>Teste Vocacional</h1>
-<p>Responda às perguntas abaixo:</p>
+<h1>🧠 Teste Vocacional Inteligente</h1>
+<p>Responda às perguntas:</p>
 
-<p>1. Você prefere:</p>
-<button onclick="pontuar('exatas')">Resolver problemas matemáticos</button>
-<button onclick="pontuar('humanas')">Debater ideias e sociedade</button>
-<button onclick="pontuar('biologicas')">Estudar o corpo e a natureza</button>
-
-<p>2. Você se identifica mais com:</p>
-<button onclick="pontuar('exatas')">Tecnologia e inovação</button>
-<button onclick="pontuar('humanas')">Comunicação e liderança</button>
-<button onclick="pontuar('biologicas')">Saúde e cuidado</button>
-
-<p>3. Você gostaria de trabalhar com:</p>
-<button onclick="pontuar('exatas')">Programação ou Engenharia</button>
-<button onclick="pontuar('humanas')">Direito ou Psicologia</button>
-<button onclick="pontuar('biologicas')">Medicina ou Biologia</button>
+<div id="perguntas"></div>
 
 <button onclick="mostrarResultado()">Ver Resultado</button>
 
-<div class="resultado" id="resultado"></div>
+<h2 id="resultado"></h2>
+<canvas id="grafico"></canvas>
+
 </div>
 
 <script>
+
 let pontos = {
-    exatas: 0,
-    humanas: 0,
-    biologicas: 0
+    Exatas: 0,
+    Humanas: 0,
+    Biológicas: 0,
+    Criativas: 0
 };
 
-function pontuar(area) {
-    pontos[area]++;
+const perguntas = [
+{
+    pergunta: "1. O que você prefere fazer?",
+    opcoes: [
+        {texto: "Resolver cálculos", area: "Exatas", peso: 2},
+        {texto: "Debater ideias", area: "Humanas", peso: 2},
+        {texto: "Estudar saúde", area: "Biológicas", peso: 2},
+        {texto: "Criar artes", area: "Criativas", peso: 2}
+    ]
+},
+{
+    pergunta: "2. Qual atividade te anima mais?",
+    opcoes: [
+        {texto: "Programar", area: "Exatas", peso: 3},
+        {texto: "Argumentar", area: "Humanas", peso: 3},
+        {texto: "Fazer experimentos", area: "Biológicas", peso: 3},
+        {texto: "Criar vídeos", area: "Criativas", peso: 3}
+    ]
 }
+];
+
+const container = document.getElementById("perguntas");
+
+perguntas.forEach((q) => {
+    let p = document.createElement("p");
+    p.innerText = q.pergunta;
+    container.appendChild(p);
+
+    q.opcoes.forEach(op => {
+        let btn = document.createElement("button");
+        btn.innerText = op.texto;
+        btn.onclick = () => pontos[op.area] += op.peso;
+        container.appendChild(btn);
+    });
+});
 
 function mostrarResultado() {
-    let maior = Object.keys(pontos).reduce((a, b) => pontos[a] > pontos[b] ? a : b);
-    
-    let texto = "";
 
-    if (maior === "exatas") {
-        texto = "Seu perfil é EXATAS 🚀\nVocê pode se destacar em Engenharia, Computação, Física ou Tecnologia.";
-    }
-    if (maior === "humanas") {
-        texto = "Seu perfil é HUMANAS 📚\nVocê pode se destacar em Direito, Psicologia, Comunicação ou Ciências Sociais.";
-    }
-    if (maior === "biologicas") {
-        texto = "Seu perfil é BIOLÓGICAS 🧬\nVocê pode se destacar em Medicina, Biologia ou áreas da Saúde.";
+    let total = Object.values(pontos).reduce((a,b)=>a+b,0);
+
+    if(total === 0){
+        document.getElementById("resultado").innerText = "Responda às perguntas primeiro.";
+        return;
     }
 
-    document.getElementById("resultado").innerText = texto;
+    let porcentagens = {};
+    for(let area in pontos){
+        porcentagens[area] = ((pontos[area]/total)*100).toFixed(1);
+    }
+
+    let ranking = Object.keys(pontos).sort((a,b)=>pontos[b]-pontos[a]);
+
+    document.getElementById("resultado").innerText =
+        `Perfil dominante: ${ranking[0]} (${porcentagens[ranking[0]]}%)`;
+
+    criarGrafico(porcentagens);
 }
+
+function criarGrafico(dados){
+
+    new Chart(document.getElementById("grafico"), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(dados),
+            datasets: [{
+                label: 'Compatibilidade (%)',
+                data: Object.values(dados),
+                backgroundColor: [
+                    '#00c3ff',
+                    '#ff9800',
+                    '#4caf50',
+                    '#e91e63'
+                ]
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+}
+
 </script>
 
 </body>
-</html>
+</html>    
