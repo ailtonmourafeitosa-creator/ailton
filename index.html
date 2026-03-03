@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema Vocacional Inteligente</title>
+<title>MMPV-8 - Sistema Vocacional Científico</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -18,31 +18,38 @@ padding:20px;
 }
 
 .container{
-background:rgba(0,0,0,0.8);
+background:rgba(0,0,0,0.85);
 padding:20px;
 border-radius:12px;
-max-width:900px;
+max-width:950px;
 margin:auto;
+}
+
+select{
+padding:6px;
+margin:5px;
+border-radius:5px;
 }
 
 button{
 background:#00c3ff;
 border:none;
 padding:10px;
-margin:6px;
+margin:8px;
 border-radius:6px;
 cursor:pointer;
-width:95%;
 }
 
 button:hover{background:#00ffcc;}
 
 textarea{
-width:95%;
-padding:10px;
-border-radius:8px;
-margin-top:15px;
+width:90%;
+padding:8px;
+margin-top:10px;
+border-radius:6px;
 }
+
+canvas{margin-top:20px;}
 </style>
 </head>
 
@@ -50,156 +57,233 @@ margin-top:15px;
 
 <div class="container">
 
-<h1>🧠 Sistema Vocacional Inteligente</h1>
+<h1>MMPV-8 – Instrumento Multidimensional de Perfil Vocacional</h1>
 
-<div id="perguntaArea"></div>
+<label>Nome do aluno:</label>
+<input type="text" id="nomeAluno">
 
-<textarea id="textoLivre" placeholder="Fale sobre seus sonhos ou interesses..."></textarea>
+<div id="perguntas"></div>
 
-<button onclick="finalizar()">Finalizar Análise</button>
+<h3>Fale sobre seus interesses:</h3>
+<textarea id="textoLivre"></textarea>
+
+<br>
+<button onclick="analisar()">Analisar Perfil</button>
+<button onclick="gerarPDF()">Gerar PDF</button>
 
 <h2 id="resultado"></h2>
 <canvas id="grafico"></canvas>
-<button onclick="gerarPDF()">Gerar Relatório PDF</button>
 
 </div>
 
 <script>
 
-let perfil={
-Analitico:0,
-Social:0,
-Cientifico:0,
-Criativo:0,
-Empreendedor:0,
-Tecnico:0
+// ---------- FATORES ----------
+let fatores = {
+AL:[], CI:[], HS:[], CR:[],
+EM:[], TO:[], IN:[], ES:[]
 };
 
-let perguntaAtual=0;
-let primeiraEscolha="";
-
-const perguntas=[
-{
-texto:"1. O que mais te atrai?",
-opcoes:[
-{texto:"Resolver problemas complexos",area:"Analitico"},
-{texto:"Ajudar pessoas",area:"Social"},
-{texto:"Investigar fenômenos",area:"Cientifico"},
-{texto:"Criar algo novo",area:"Criativo"},
-{texto:"Criar empresa",area:"Empreendedor"},
-{texto:"Trabalhar com máquinas",area:"Tecnico"}
+const afirmacoes = {
+AL:[
+"Gosto de resolver problemas complexos",
+"Tenho facilidade com cálculos",
+"Prefiro decisões baseadas em dados",
+"Me interesso por tecnologia",
+"Gosto de lógica estruturada"
+],
+CI:[
+"Gosto de investigar fenômenos",
+"Tenho curiosidade científica",
+"Gosto de fazer experimentos",
+"Me interesso por pesquisa",
+"Busco entender causas profundas"
+],
+HS:[
+"Gosto de ajudar pessoas",
+"Prefiro trabalhar em equipe",
+"Me preocupo com impacto social",
+"Tenho facilidade de comunicação",
+"Gosto de mediar conflitos"
+],
+CR:[
+"Gosto de criar coisas originais",
+"Tenho imaginação ativa",
+"Gosto de arte ou design",
+"Prefiro tarefas criativas",
+"Inovar me motiva"
+],
+EM:[
+"Tenho vontade de empreender",
+"Gosto de liderar",
+"Assumo riscos calculados",
+"Penso em crescimento financeiro",
+"Gosto de autonomia profissional"
+],
+TO:[
+"Prefiro atividades práticas",
+"Gosto de montar ou consertar",
+"Aprendo fazendo",
+"Tenho interesse técnico",
+"Prefiro execução a teoria"
+],
+IN:[
+"Prefiro trabalhar sozinho",
+"Tomo decisões com autonomia",
+"Valorizo independência",
+"Não gosto de depender de outros",
+"Prefiro liberdade profissional"
+],
+ES:[
+"Busco estabilidade financeira",
+"Prefiro rotina previsível",
+"Evito riscos",
+"Valorizo segurança profissional",
+"Prefiro estabilidade a mudança"
 ]
-}
+};
+
+const escala = [
+"1 - Discordo totalmente",
+"2 - Discordo",
+"3 - Neutro",
+"4 - Concordo",
+"5 - Concordo totalmente"
 ];
 
-function mostrarPergunta(){
+let container = document.getElementById("perguntas");
 
-let area=document.getElementById("perguntaArea");
-area.innerHTML="";
-
+for(let fator in afirmacoes){
+afirmacoes[fator].forEach((texto,i)=>{
 let p=document.createElement("p");
-p.innerText=perguntas[perguntaAtual].texto;
-area.appendChild(p);
+p.innerText=texto;
+container.appendChild(p);
 
-perguntas[perguntaAtual].opcoes.forEach(op=>{
-let btn=document.createElement("button");
-btn.innerText=op.texto;
-btn.onclick=()=>responder(op.area);
-area.appendChild(btn);
+let select=document.createElement("select");
+select.id=fator+i;
+
+escala.forEach((e,index)=>{
+let option=document.createElement("option");
+option.value=index+1;
+option.text=e;
+select.appendChild(option);
+});
+
+container.appendChild(select);
 });
 }
 
-function responder(areaEscolhida){
+// ---------- SOFTMAX ----------
+function softmax(scores){
+let exp = scores.map(s=>Math.exp(s));
+let soma = exp.reduce((a,b)=>a+b);
+return exp.map(e=>e/soma);
+}
 
-perfil[areaEscolhida]+=2;
+// ---------- CORRELAÇÃO ----------
+function correlacao(x,y){
+let n=x.length;
+let mx=x.reduce((a,b)=>a+b)/n;
+let my=y.reduce((a,b)=>a+b)/n;
+let num=0,sx=0,sy=0;
 
-if(perguntaAtual===0){
-primeiraEscolha=areaEscolhida;
+for(let i=0;i<n;i++){
+num+=(x[i]-mx)*(y[i]-my);
+sx+=Math.pow(x[i]-mx,2);
+sy+=Math.pow(y[i]-my,2);
+}
+return num/Math.sqrt(sx*sy);
+}
 
-// pergunta adaptativa
-perguntas.push({
-texto:"Pergunta específica para seu perfil:",
-opcoes:[
-{texto:"Você gosta de assumir riscos?",area:areaEscolhida},
-{texto:"Prefere estabilidade?",area:"Social"}
-]
+let probabilidades;
+let rankingGlobal;
+let indiceCoesao;
+
+function analisar(){
+
+let scores={};
+let respostas={};
+
+for(let fator in afirmacoes){
+respostas[fator]=[];
+let soma=0;
+
+afirmacoes[fator].forEach((_,i)=>{
+let valor=parseInt(document.getElementById(fator+i).value);
+soma+=valor;
+respostas[fator].push(valor);
 });
+
+scores[fator]=(soma-5)/20;
 }
 
-perguntaAtual++;
+let vetorScores=Object.values(scores);
+probabilidades=softmax(vetorScores);
 
-if(perguntaAtual<perguntas.length){
-mostrarPergunta();
+let fatoresKeys=Object.keys(scores);
+
+rankingGlobal=fatoresKeys
+.map((f,i)=>({fator:f,prob:probabilidades[i]}))
+.sort((a,b)=>b.prob-a.prob);
+
+let diferenca=Math.abs(rankingGlobal[0].prob-rankingGlobal[1].prob);
+let perfilHibrido=diferenca<0.08
+? rankingGlobal[0].fator+"-"+rankingGlobal[1].fator
+: rankingGlobal[0].fator;
+
+// MATRIZ CORRELAÇÃO
+let correlacoes=[];
+for(let i=0;i<fatoresKeys.length;i++){
+for(let j=i+1;j<fatoresKeys.length;j++){
+let r=correlacao(
+respostas[fatoresKeys[i]],
+respostas[fatoresKeys[j]]
+);
+correlacoes.push(Math.abs(r));
 }
 }
 
-function analisarTexto(){
-
-let texto=document.getElementById("textoLivre").value.toLowerCase();
-
-let palavras={
-Empreendedor:["empresa","negocio","liderar","inovar","lucro"],
-Analitico:["programar","calculo","logica","tecnologia"],
-Social:["ajudar","ensinar","comunidade"],
-Cientifico:["pesquisa","laboratorio","cientifico"],
-Criativo:["arte","design","musica","video"],
-Tecnico:["mecanica","eletrica","consertar"]
-};
-
-for(let area in palavras){
-palavras[area].forEach(p=>{
-if(texto.includes(p)) perfil[area]+=1;
-});
-}
-
-}
-
-function finalizar(){
-
-analisarTexto();
-
-let total=Object.values(perfil).reduce((a,b)=>a+b,0);
-
-let probabilidades={};
-
-for(let area in perfil){
-probabilidades[area]=(perfil[area]/total*100).toFixed(1);
-}
-
-let ranking=Object.keys(perfil).sort((a,b)=>perfil[b]-perfil[a]);
+indiceCoesao=(correlacoes.reduce((a,b)=>a+b)/correlacoes.length).toFixed(2);
 
 document.getElementById("resultado").innerText=
-`Perfil predominante: ${ranking[0]} (${probabilidades[ranking[0]]}%) | Perfil secundário: ${ranking[1]}`;
+"Perfil predominante: "+rankingGlobal[0].fator+
+" | Perfil híbrido: "+perfilHibrido+
+" | Índice de coesão: "+indiceCoesao;
 
+// Radar chart
 new Chart(document.getElementById("grafico"),{
-type:'bar',
+type:'radar',
 data:{
-labels:Object.keys(probabilidades),
+labels:fatoresKeys,
 datasets:[{
-label:'Probabilidade (%)',
-data:Object.values(probabilidades),
-backgroundColor:['#00c3ff','#ff9800','#4caf50','#e91e63','#9c27b0','#ffc107']
+label:'Probabilidade',
+data:probabilidades.map(p=>(p*100).toFixed(1)),
+backgroundColor:'rgba(0,195,255,0.2)',
+borderColor:'#00c3ff'
 }]
-},
-options:{scales:{y:{beginAtZero:true,max:100}}}
+}
 });
-
 }
 
+// ---------- PDF ----------
 function gerarPDF(){
-
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF();
 
-doc.text("Relatório Vocacional",20,20);
-doc.text(document.getElementById("resultado").innerText,20,40);
+doc.text("Relatório Técnico - MMPV-8",20,20);
+doc.text("Aluno: "+document.getElementById("nomeAluno").value,20,30);
+
+doc.text("Perfil dominante: "+rankingGlobal[0].fator,20,45);
+doc.text("Indice de coesao estrutural: "+indiceCoesao,20,55);
+
+doc.addPage();
+doc.text("Relatório Pedagógico",20,20);
+doc.text("Seu perfil indica tendência principal para "+rankingGlobal[0].fator,20,35);
 
 doc.save("Relatorio_Vocacional.pdf");
 }
 
-mostrarPergunta();
-
 </script>
 
 </body>
-</html>    
+</html>
